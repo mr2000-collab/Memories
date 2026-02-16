@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Media Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f172a;       /* Dark Blue-Grey */
+            --card-bg: #1e293b;        /* Lighter Blue-Grey */
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;   /* Blue */
+            --header-height: 120px;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding-top: var(--header-height); /* Space for fixed header */
+        }
+
+        /* --- Header Section --- */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            border-bottom: 1px solid #334155;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            height: 60px;
+            box-sizing: border-box;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Search Bar */
+        .search-container {
+            flex-grow: 1;
+            max-width: 500px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border-radius: 20px;
+            border: 1px solid #334155;
+            background-color: #0f172a;
+            color: white;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        /* Upload Button */
+        .upload-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .upload-btn:hover { background-color: #2563eb; }
+
+        /* --- Category Tabs --- */
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            padding: 10px 30px;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none; /* Hide scrollbar Firefox */
+        }
+        .category-tabs::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
+
+        .tab {
+            padding: 6px 16px;
+            border-radius: 20px;
+            background-color: #334155;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .tab:hover {
+            background-color: #475569;
+            color: white;
+        }
+
+        .tab.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-color: #60a5fa;
+        }
+
+        /* --- Gallery Grid --- */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 20px 30px;
+        }
+
+        .media-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 1; /* Square tiles */
+            group: card;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .media-card:hover {
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        .media-content {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Tags overlay on image */
+        .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .media-card:hover .card-overlay { opacity: 1; }
+
+        .tag-badge {
+            font-size: 0.75rem;
+            background-color: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            backdrop-filter: blur(4px);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        /* Hidden Input */
+        #file-input { display: none; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .top-bar { padding: 10px 15px; }
+            .search-container { display: none; } /* Hide search on very small screens or make it a toggle */
+            .category-tabs { padding: 10px 15px; }
+            .gallery-grid { padding: 15px; grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="fixed-header">
+        <div class="top-bar">
+            <div class="logo"><i class="fa-solid fa-layer-group"></i> GalleryAI</div>
+            
+            <div class="search-container">
+                <i class="fa-solid fa-search search-icon"></i>
+                <input type="text" id="search-input" class="search-input" placeholder="Search photos, cats, sunsets...">
+            </div>
+
+            <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+            </button>
+            <input type="file" id="file-input" multiple accept="image/*,video/*">
+        </div>
+
+        <div class="category-tabs" id="tab-container">
+            <div class="tab active" data-cat="All">All Photos</div>
+            <div class="tab" data-cat="Similar Faces">Similar Faces</div>
+            <div class="tab" data-cat="Pets">Pets</div>
+            <div class="tab" data-cat="Landscape">Landscape</div>
+            <div class="tab" data-cat="Green">Green</div>
+            <div class="tab" data-cat="Sunset">Sunset</div>
+            <div class="tab" data-cat="Videos">Videos</div>
+        </div>
+    </header>
+
+    <main class="gallery-grid" id="gallery-grid">
+        <div class="empty-state">
+            <i class="fa-regular fa-images fa-3x"></i>
+            <h3>Gallery is empty</h3>
+            <p>Upload photos to see the auto-categorization in action.</p>
+        </div>
+    </main>
+
+    <script>
+        // --- DATA STATE ---
+        // We store uploads here. 
+        let mediaLibrary = [];
+        let currentFilter = 'All';
+
+        // Available simulated categories (excluding 'All' and 'Videos')
+        const SIMULATED_TAGS = ['Similar Faces', 'Pets', 'Landscape', 'Green', 'Sunset'];
+
+        // --- DOM ELEMENTS ---
+        const fileInput = document.getElementById('file-input');
+        const galleryGrid = document.getElementById('gallery-grid');
+        const searchInput = document.getElementById('search-input');
+        const tabs = document.querySelectorAll('.tab');
+
+        // --- EVENT LISTENERS ---
+
+        // 1. Upload Handling
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            files.forEach(file => {
+                const url = URL.createObjectURL(file);
+                const isVideo = file.type.startsWith('video');
+                
+                // SIMULATION: Randomly assign a category for demo purposes
+                // In a real app, an AI model would detect this.
+                const randomTag = SIMULATED_TAGS[Math.floor(Math.random() * SIMULATED_TAGS.length)];
+                
+                const mediaItem = {
+                    id: Date.now() + Math.random(),
+                    url: url,
+                    type: isVideo ? 'video' : 'image',
+                    tag: isVideo ? 'Videos' : randomTag, // Videos go to video tab automatically
+                    date: new Date()
+                };
+
+                mediaLibrary.unshift(mediaItem); // Add to beginning
+            });
+
+            // Clear input and Render
+            fileInput.value = '';
+            renderGallery();
+        });
+
+        // 2. Tab Clicking
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all
+                tabs.forEach(t => t.classList.remove('active'));
+                // Add to clicked
+                tab.classList.add('active');
+                
+                currentFilter = tab.getAttribute('data-cat');
+                renderGallery();
+            });
+        });
+
+        // 3. Search Typing
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            renderGallery(query);
+        });
+
+        // --- RENDER LOGIC ---
+
+        function renderGallery(searchQuery = '') {
+            galleryGrid.innerHTML = ''; // Clear current view
+
+            // Filter logic
+            const filteredItems = mediaLibrary.filter(item => {
+                // 1. Category Filter
+                const matchesCategory = (currentFilter === 'All') || (item.tag === currentFilter) || (currentFilter === 'Videos' && item.type === 'video');
+                
+                // 2. Search Filter
+                const matchesSearch = item.tag.toLowerCase().includes(searchQuery);
+
+                return matchesCategory && matchesSearch;
+            });
+
+            // Empty State
+            if (filteredItems.length === 0) {
+                galleryGrid.innerHTML = `
+                    <div class="empty-state">
+                        <p>No media found for "${currentFilter}" or search.</p>
+                    </div>`;
+                return;
+            }
+
+            // Draw Cards
+            filteredItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'media-card';
+                
+                // Media Element
+                let mediaEl;
+                if (item.type === 'video') {
+                    mediaEl = document.createElement('video');
+                    mediaEl.src = item.url;
+                    mediaEl.controls = true;
+                } else {
+                    mediaEl = document.createElement('img');
+                    mediaEl.src = item.url;
+                }
+                mediaEl.className = 'media-content';
+
+                // Overlay with Tag info
+                const overlay = document.createElement('div');
+                overlay.className = 'card-overlay';
+                overlay.innerHTML = `<span class="tag-badge">${item.tag}</span>`;
+
+                card.appendChild(mediaEl);
+                card.appendChild(overlay);
+                galleryGrid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
