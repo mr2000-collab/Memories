@@ -3,362 +3,494 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Media Gallery</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Vertical Timeline Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-color: #0f172a;       /* Dark Blue-Grey */
-            --card-bg: #1e293b;        /* Lighter Blue-Grey */
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-color: #3b82f6;   /* Blue */
-            --header-height: 120px;
+            --bg-body: #000000;
+            --bg-card: #1c1c1e;
+            --accent: #0a84ff;
+            --text-main: #ffffff;
+            --text-muted: #8e8e93;
+            --header-h: 70px;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding-top: var(--header-height); /* Space for fixed header */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
         }
 
-        /* --- Header Section --- */
-        .fixed-header {
-            position: fixed;
+        /* --- Header --- */
+        header {
+            height: var(--header-h);
+            background: rgba(28, 28, 30, 0.9);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+        }
+
+        .app-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
+        }
+
+        /* Tabs */
+        .segmented-control {
+            background: #333;
+            border-radius: 8px;
+            padding: 2px;
+            display: flex;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: #636366;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .upload-icon {
+            color: var(--accent);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* --- Main Layout --- */
+        main {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view-container {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(12px);
-            z-index: 100;
-            border-bottom: 1px solid #334155;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            height: 100%;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            padding-bottom: 100px; /* Space for bottom content */
+            display: none;
+            scrollbar-width: none; /* Hide standard scrollbar */
+        }
+        
+        .view-container::-webkit-scrollbar { display: none; }
+
+        .view-container.active { display: block; }
+
+        /* --- Timeline Styles --- */
+        .timeline-wrapper {
+            padding: 0 20px 0 10px; /* Right padding reserved for scrubber */
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            height: 60px;
-            box-sizing: border-box;
+        .date-group {
+            margin-top: 30px;
         }
 
-        .logo {
-            font-size: 1.4rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Search Bar */
-        .search-container {
-            flex-grow: 1;
-            max-width: 500px;
-            margin: 0 20px;
-            position: relative;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 10px 15px 10px 40px;
-            border-radius: 20px;
-            border: 1px solid #334155;
-            background-color: #0f172a;
-            color: white;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .search-input:focus {
-            border-color: var(--accent-color);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-        }
-
-        /* Upload Button */
-        .upload-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
+        .date-header {
+            position: sticky;
+            top: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            padding: 10px 0;
+            font-size: 1rem;
             font-weight: 600;
+            color: var(--text-main);
+            z-index: 10;
             display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background 0.2s;
-        }
-        .upload-btn:hover { background-color: #2563eb; }
-
-        /* --- Category Tabs --- */
-        .category-tabs {
-            display: flex;
+            align-items: baseline;
             gap: 10px;
-            padding: 10px 30px;
-            overflow-x: auto;
-            white-space: nowrap;
-            scrollbar-width: none; /* Hide scrollbar Firefox */
-        }
-        .category-tabs::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
-
-        .tab {
-            padding: 6px 16px;
-            border-radius: 20px;
-            background-color: #334155;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
         }
 
-        .tab:hover {
-            background-color: #475569;
-            color: white;
+        .date-header span.sub-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
         }
 
-        .tab.active {
-            background-color: rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
-            border-color: #60a5fa;
-        }
-
-        /* --- Gallery Grid --- */
-        .gallery-grid {
+        .photo-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 16px;
-            padding: 20px 30px;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 4px;
         }
 
-        .media-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
+        .media-item {
+            aspect-ratio: 1;
+            background: #2c2c2e;
             overflow: hidden;
             position: relative;
-            aspect-ratio: 1; /* Square tiles */
-            group: card;
-            cursor: pointer;
-            transition: transform 0.2s;
         }
 
-        .media-card:hover {
-            transform: scale(1.02);
-            z-index: 10;
-        }
-
-        .media-content {
+        .media-item img, .media-item video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.2s;
+        }
+        
+        .media-item:hover img { transform: scale(1.05); }
+
+        /* --- Vertical Scrubber (The Slider) --- */
+        .scrubber-container {
+            position: absolute;
+            right: 2px;
+            top: 20px;
+            bottom: 20px;
+            width: 40px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* Tags overlay on image */
-        .card-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,0.8));
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            opacity: 0;
+        /* We rotate a standard range input to make it vertical */
+        input[type=range].vertical-slider {
+            writing-mode: bt-lr; /* IE/Edge */
+            -webkit-appearance: slider-vertical; /* Webkit */
+            width: 100%;
+            height: 90%;
+            opacity: 0.3;
+            cursor: ns-resize;
+            accent-color: var(--accent);
             transition: opacity 0.2s;
         }
 
-        .media-card:hover .card-overlay { opacity: 1; }
-
-        .tag-badge {
-            font-size: 0.75rem;
-            background-color: rgba(255,255,255,0.2);
-            padding: 2px 8px;
-            border-radius: 4px;
-            backdrop-filter: blur(4px);
+        .scrubber-container:hover input[type=range] {
+            opacity: 1;
         }
 
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 60px;
-            color: var(--text-secondary);
+        /* The Bubble showing the date */
+        .date-bubble {
+            position: absolute;
+            right: 50px; /* To the left of the slider */
+            background: var(--accent);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateX(10px) scale(0.8);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
-        /* Hidden Input */
-        #file-input { display: none; }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .top-bar { padding: 10px 15px; }
-            .search-container { display: none; } /* Hide search on very small screens or make it a toggle */
-            .category-tabs { padding: 10px 15px; }
-            .gallery-grid { padding: 15px; grid-template-columns: repeat(2, 1fr); }
+        .scrubber-container.active .date-bubble {
+            opacity: 1;
+            transform: translateX(0) scale(1);
         }
+
+        /* --- Category View --- */
+        .category-list {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        .cat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            position: relative;
+        }
+
+        .cat-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .cat-card:hover img { opacity: 1; }
+
+        .cat-label {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* Inputs */
+        #file-upload { display: none; }
     </style>
 </head>
 <body>
 
-    <header class="fixed-header">
-        <div class="top-bar">
-            <div class="logo"><i class="fa-solid fa-layer-group"></i> GalleryAI</div>
-            
-            <div class="search-container">
-                <i class="fa-solid fa-search search-icon"></i>
-                <input type="text" id="search-input" class="search-input" placeholder="Search photos, cats, sunsets...">
-            </div>
-
-            <button class="upload-btn" onclick="document.getElementById('file-input').click()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Upload
-            </button>
-            <input type="file" id="file-input" multiple accept="image/*,video/*">
+    <header>
+        <div class="app-title">Gallery</div>
+        <div class="segmented-control">
+            <button class="tab-btn active" onclick="switchTab('timeline')">Photos</button>
+            <button class="tab-btn" onclick="switchTab('albums')">Albums</button>
         </div>
-
-        <div class="category-tabs" id="tab-container">
-            <div class="tab active" data-cat="All">All Photos</div>
-            <div class="tab" data-cat="Similar Faces">Similar Faces</div>
-            <div class="tab" data-cat="Pets">Pets</div>
-            <div class="tab" data-cat="Landscape">Landscape</div>
-            <div class="tab" data-cat="Green">Green</div>
-            <div class="tab" data-cat="Sunset">Sunset</div>
-            <div class="tab" data-cat="Videos">Videos</div>
-        </div>
+        <label for="file-upload">
+            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+        </label>
+        <input type="file" id="file-upload" multiple accept="image/*,video/*">
     </header>
 
-    <main class="gallery-grid" id="gallery-grid">
-        <div class="empty-state">
-            <i class="fa-regular fa-images fa-3x"></i>
-            <h3>Gallery is empty</h3>
-            <p>Upload photos to see the auto-categorization in action.</p>
+    <main>
+        <div id="timeline-view" class="view-container active">
+            <div class="timeline-wrapper" id="timeline-content">
+                </div>
+        </div>
+
+        <div class="scrubber-container" id="scrubber-ui">
+            <div class="date-bubble" id="scrubber-bubble">Today</div>
+            <input type="range" min="0" max="100" value="0" class="vertical-slider" id="time-slider">
+        </div>
+
+        <div id="albums-view" class="view-container">
+            <div class="category-list" id="category-content">
+                </div>
         </div>
     </main>
 
     <script>
-        // --- DATA STATE ---
-        // We store uploads here. 
-        let mediaLibrary = [];
-        let currentFilter = 'All';
+        // --- DATA SIMULATION ---
+        let db = [];
+        const CATEGORIES = ['Nature', 'Pets', 'Food', 'Travel', 'People'];
 
-        // Available simulated categories (excluding 'All' and 'Videos')
-        const SIMULATED_TAGS = ['Similar Faces', 'Pets', 'Landscape', 'Green', 'Sunset'];
+        // Helper to create dates
+        const now = new Date();
+        const oneDay = 24 * 60 * 60 * 1000;
+
+        // Generate dummy data for the visual demo
+        function initDemoData() {
+            for(let i=0; i<30; i++) {
+                // Generate images across last 6 months
+                const pastDate = new Date(now.getTime() - (Math.random() * 180 * oneDay));
+                const cat = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+                
+                db.push({
+                    url: `https://picsum.photos/200?random=${i}`, // Placeholder images
+                    date: pastDate,
+                    type: 'image',
+                    category: cat
+                });
+            }
+            // Sort Newest to Oldest
+            db.sort((a, b) => b.date - a.date);
+            renderTimeline();
+            renderCategories();
+        }
 
         // --- DOM ELEMENTS ---
-        const fileInput = document.getElementById('file-input');
-        const galleryGrid = document.getElementById('gallery-grid');
-        const searchInput = document.getElementById('search-input');
-        const tabs = document.querySelectorAll('.tab');
-
-        // --- EVENT LISTENERS ---
-
-        // 1. Upload Handling
-        fileInput.addEventListener('change', function(e) {
-            const files = Array.from(e.target.files);
-            
-            files.forEach(file => {
-                const url = URL.createObjectURL(file);
-                const isVideo = file.type.startsWith('video');
-                
-                // SIMULATION: Randomly assign a category for demo purposes
-                // In a real app, an AI model would detect this.
-                const randomTag = SIMULATED_TAGS[Math.floor(Math.random() * SIMULATED_TAGS.length)];
-                
-                const mediaItem = {
-                    id: Date.now() + Math.random(),
-                    url: url,
-                    type: isVideo ? 'video' : 'image',
-                    tag: isVideo ? 'Videos' : randomTag, // Videos go to video tab automatically
-                    date: new Date()
-                };
-
-                mediaLibrary.unshift(mediaItem); // Add to beginning
-            });
-
-            // Clear input and Render
-            fileInput.value = '';
-            renderGallery();
-        });
-
-        // 2. Tab Clicking
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Remove active class from all
-                tabs.forEach(t => t.classList.remove('active'));
-                // Add to clicked
-                tab.classList.add('active');
-                
-                currentFilter = tab.getAttribute('data-cat');
-                renderGallery();
-            });
-        });
-
-        // 3. Search Typing
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            renderGallery(query);
-        });
+        const timelineContent = document.getElementById('timeline-content');
+        const timelineView = document.getElementById('timeline-view');
+        const slider = document.getElementById('time-slider');
+        const scrubberUI = document.getElementById('scrubber-ui');
+        const bubble = document.getElementById('scrubber-bubble');
+        const fileInput = document.getElementById('file-upload');
 
         // --- RENDER LOGIC ---
 
-        function renderGallery(searchQuery = '') {
-            galleryGrid.innerHTML = ''; // Clear current view
+        function renderTimeline() {
+            timelineContent.innerHTML = '';
+            
+            let lastDateStr = '';
+            let currentGrid = null;
 
-            // Filter logic
-            const filteredItems = mediaLibrary.filter(item => {
-                // 1. Category Filter
-                const matchesCategory = (currentFilter === 'All') || (item.tag === currentFilter) || (currentFilter === 'Videos' && item.type === 'video');
-                
-                // 2. Search Filter
-                const matchesSearch = item.tag.toLowerCase().includes(searchQuery);
+            db.forEach(item => {
+                // Grouping Logic (e.g., "February 16, 2026")
+                const dateOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+                const fullDateStr = item.date.toLocaleDateString('en-US', dateOptions);
+                const dayStr = item.date.toLocaleDateString('en-US', { weekday: 'long' });
 
-                return matchesCategory && matchesSearch;
-            });
+                if (fullDateStr !== lastDateStr) {
+                    lastDateStr = fullDateStr;
 
-            // Empty State
-            if (filteredItems.length === 0) {
-                galleryGrid.innerHTML = `
-                    <div class="empty-state">
-                        <p>No media found for "${currentFilter}" or search.</p>
-                    </div>`;
-                return;
-            }
+                    // Create Group Container
+                    const group = document.createElement('div');
+                    group.className = 'date-group';
+                    
+                    // Add Header with ID for scrubbing
+                    // We store the timestamp on the element to read it later
+                    const header = document.createElement('div');
+                    header.className = 'date-header';
+                    header.innerHTML = `${fullDateStr} <span class="sub-date">${dayStr}</span>`;
+                    header.dataset.timestamp = item.date.getTime(); 
+                    
+                    group.appendChild(header);
 
-            // Draw Cards
-            filteredItems.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'media-card';
-                
-                // Media Element
-                let mediaEl;
-                if (item.type === 'video') {
-                    mediaEl = document.createElement('video');
-                    mediaEl.src = item.url;
-                    mediaEl.controls = true;
-                } else {
-                    mediaEl = document.createElement('img');
-                    mediaEl.src = item.url;
+                    // Add Grid
+                    currentGrid = document.createElement('div');
+                    currentGrid.className = 'photo-grid';
+                    group.appendChild(currentGrid);
+                    
+                    timelineContent.appendChild(group);
                 }
-                mediaEl.className = 'media-content';
 
-                // Overlay with Tag info
-                const overlay = document.createElement('div');
-                overlay.className = 'card-overlay';
-                overlay.innerHTML = `<span class="tag-badge">${item.tag}</span>`;
-
-                card.appendChild(mediaEl);
-                card.appendChild(overlay);
-                galleryGrid.appendChild(card);
+                // Add Media
+                const div = document.createElement('div');
+                div.className = 'media-item';
+                
+                if(item.type === 'video'){
+                    const vid = document.createElement('video');
+                    vid.src = item.url;
+                    vid.controls = true;
+                    div.appendChild(vid);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = item.url;
+                    img.loading = "lazy";
+                    div.appendChild(img);
+                }
+                currentGrid.appendChild(div);
             });
         }
+
+        function renderCategories() {
+            const container = document.getElementById('category-content');
+            container.innerHTML = '';
+            
+            // Unique categories
+            const cats = [...new Set(db.map(i => i.category))];
+            
+            cats.forEach(cat => {
+                const item = db.find(i => i.category === cat);
+                const div = document.createElement('div');
+                div.className = 'cat-card';
+                div.innerHTML = `
+                    <img src="${item.url}" />
+                    <div class="cat-label">${cat}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- UPLOAD HANDLING ---
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                const url = URL.createObjectURL(file);
+                // In real app, read file metadata for date. Here we use 'Now'
+                db.unshift({
+                    url: url,
+                    date: new Date(),
+                    type: file.type.startsWith('video') ? 'video' : 'image',
+                    category: 'Uploads'
+                });
+            });
+            // Re-sort and render
+            db.sort((a, b) => b.date - a.date);
+            renderTimeline();
+        });
+
+        // --- VERTICAL SLIDER LOGIC ---
+
+        // 1. Sync Slider Drag -> Scroll Page
+        slider.addEventListener('input', (e) => {
+            const percent = e.target.value; // 0 to 100
+            
+            // Calculate scroll position
+            // 0 = Top (Newest), 100 = Bottom (Oldest)
+            const totalHeight = timelineView.scrollHeight - timelineView.clientHeight;
+            const scrollPos = (percent / 100) * totalHeight;
+            
+            timelineView.scrollTo(0, scrollPos);
+            
+            // Update Bubble Text
+            updateBubbleDate(scrollPos);
+            
+            // Visual Effect
+            scrubberUI.classList.add('active');
+        });
+
+        slider.addEventListener('change', () => {
+            setTimeout(() => scrubberUI.classList.remove('active'), 1000);
+        });
+
+        // 2. Sync Page Scroll -> Update Slider Position
+        timelineView.addEventListener('scroll', () => {
+            if (scrubberUI.classList.contains('active')) return; // Don't fight the user if dragging
+
+            const totalHeight = timelineView.scrollHeight - timelineView.clientHeight;
+            const currentScroll = timelineView.scrollTop;
+            
+            if (totalHeight > 0) {
+                const percent = (currentScroll / totalHeight) * 100;
+                slider.value = percent;
+            }
+        });
+
+        // 3. Logic to find which Date Header is currently visible
+        function updateBubbleDate(scrollPos) {
+            // Get all headers
+            const headers = document.querySelectorAll('.date-header');
+            let foundDate = "Today";
+
+            // Find the header closest to the top of the viewport
+            // We adjust by offsetTop
+            for (let header of headers) {
+                // If header is above or near the current scroll line
+                if (header.offsetTop <= (scrollPos + 100)) {
+                    // Convert timestamp back to short string
+                    const ts = parseInt(header.dataset.timestamp);
+                    const d = new Date(ts);
+                    foundDate = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                }
+            }
+            
+            // Update bubble position
+            // We map the slider value (0-100) to the bubble's "top" css property
+            const sliderVal = slider.value;
+            // The slider height is about 90% of the container, we need to map visual position roughly
+            bubble.style.top = `${sliderVal}%`;
+            bubble.innerText = foundDate;
+        }
+
+        // --- TAB SWITCHING ---
+        function switchTab(tab) {
+            // UI Toggles
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-view`).classList.add('active');
+
+            // Hide Scrubber if not timeline
+            if(tab === 'albums') {
+                scrubberUI.style.display = 'none';
+            } else {
+                scrubberUI.style.display = 'flex';
+            }
+        }
+
+        // Initialize
+        initDemoData();
+
     </script>
 </body>
 </html>
